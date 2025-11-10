@@ -1,3 +1,4 @@
+
 # Weather Dashboard Thailand 🌤️
 
 A responsive weather dashboard for Thai cities built with **Next.js 13**, **React**, and **Tailwind CSS**.  
@@ -17,7 +18,7 @@ It shows **hourly and daily weather data**, allows selecting cities and forecast
 
 ## Demo
 
-![Dashboard Screenshot](/public/Screenshot2.png)
+![Dashboard Screenshot](./screenshot.png)  
 *(Replace with your actual screenshot)*
 
 ---
@@ -40,54 +41,44 @@ cd <repo-name>
 npm install
 # or
 yarn
+```
+### Data Ingestion Flow Diagram
 
-#Data Ingestion
+```bash
 [User / Query Params]
-          |
-          v
-  [Determine City]
-          |
-          v
- +----------------------+
- | Fetch WeatherHistory | -> Hourly + Daily
- +----------------------+
-          |
-          v
- +----------------+
- | Fetch Forecast |
- +----------------+
-          |
-          v
- +-------------------+
- | Map Daily Data    | -> DailySummary Chart
- +-------------------+
-          |
-          v
- +-------------------+
- | Map Hourly Data   | -> HourlyLine Chart
- +-------------------+
+		|
+		v
+[Determine City]
+		|
+		v
++----------------------+
+| Fetch WeatherHistory | -> Hourly + Daily
++----------------------+
+		|
+		v
++----------------+
+| Fetch Forecast |
++----------------+
+		|
+		v
++-------------------+
+| Map Daily Data | -> DailySummary Chart
++-------------------+
+		|
+		v
++-------------------+
+| Map Hourly Data | -> HourlyLine Chart
++-------------------+
 
--- 
+1.ผู้ใช้ส่งคำค้น (query params) หรือใช้ตำแหน่ง GPS.
+2.ระบบเลือกเมืองที่ใกล้ที่สุด. 
+3.Fetch ข้อมูล Weather History (hourly/daily) และ Forecast (daily).  
+4.Map ข้อมูลออกมาเป็น DailyData และ HourlyData.  
+5.แสดงผลใน component DailySummary และ HourlyLine.
 
-ผู้ใช้ส่งคำค้น (query params) หรือใช้ตำแหน่ง GPS.
-
-ระบบเลือกเมืองที่ใกล้ที่สุด.
-
-Fetch ข้อมูล Weather History (hourly/daily) และ Forecast (daily).
-
-Map ข้อมูลออกมาเป็น DailyData และ HourlyData.
-
-แสดงผลใน component DailySummary และ HourlyLine.
-
--- 
-
-Users submit search terms (query parameters) or use GPS location.
-
-The system selects the nearest city.
-
-Fetch weather history (hourly/daily) and forecast (daily) data.
-
-Map data into DailyData and HourlyData.
-
-Displays results in the DailySummary and HourlyLine components.
-
+1.Users submit search terms (query parameters) or  use GPS location.
+2.The system selects the nearest city.
+3.Fetch weather history (hourly/daily) and forecast (daily) data.
+4.Map data  into DailyData and HourlyData.
+5.Displays results in the DailySummary and HourlyLine components.
+```

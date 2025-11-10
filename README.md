@@ -18,7 +18,7 @@ It shows **hourly and daily weather data**, allows selecting cities and forecast
 
 ## Demo
 
-![Dashboard Screenshot](./publicscreenshot2.png)  
+![Dashboard Screenshot](./public/screenshot2.png)  
 *(Replace with your actual screenshot)*
 
 ---

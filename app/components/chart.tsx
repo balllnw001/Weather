@@ -1,14 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation"; // ← สำหรับ Next.js 13+ client component
+import { useSearchParams } from "next/navigation";
 import { fetchWeather, fetchForecast } from "../utils/fetchweather";
 import HourlyLine from "../components/chart/HourlyLine";
 import DailySummer from "../components/chart/DailySummer";
-import { thaiCities } from "../utils/thaiChities";
+import { thaiCities, ThaiCity } from "../utils/thaiChities";
 
 interface ChartPageProps {
   darkMode: boolean;
+}
+
+interface HourlyData {
+  time: Date;
+  temperature: number | null;
+}
+
+interface DailyData {
+  date: string;
+  tempMax: number;
+  tempMin: number;
+  rainTotal: number;
 }
 
 const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
@@ -16,12 +28,12 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
   const queryCity = searchParams.get("city");
   const queryRange = searchParams.get("range");
 
-  const [city, setCity] = useState<any>(null);
+  const [city, setCity] = useState<ThaiCity | null>(null);
   const [rangeDays, setRangeDays] = useState<number>(
     queryRange ? parseInt(queryRange) : 7
   );
-  const [hourlyData, setHourlyData] = useState<any[]>([]);
-  const [dailyData, setDailyData] = useState<any[]>([]);
+  const [hourlyData, setHourlyData] = useState<HourlyData[]>([]);
+  const [dailyData, setDailyData] = useState<DailyData[]>([]);
 
   // 🌍 ดึงตำแหน่งผู้ใช้ตอนหน้าโหลด หรือจาก query param
   useEffect(() => {
@@ -68,7 +80,7 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
         const forecast = await fetchForecast(city.lat, city.lon);
 
         // Daily merge
-        const allDaily = (history.daily?.time || []).map(
+        const allDaily: DailyData[] = (history.daily?.time || []).map(
           (date: string, i: number) => ({
             date,
             tempMax: history.daily.temperature_2m_max[i],
@@ -85,7 +97,7 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
         const startDate = new Date(today);
         startDate.setDate(today.getDate() - (rangeDays - 1));
 
-        const mergedHourly: any[] = [];
+        const mergedHourly: HourlyData[] = [];
         for (
           let d = new Date(startDate);
           d <= today;
@@ -147,7 +159,6 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
             <circle cx="12" cy="9" r="2.5" fill="currentColor" />
           </svg>
 
-          {/* Dropdown selector */}
           <select
             value={city?.name || ""}
             onChange={(e) => {

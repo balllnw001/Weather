@@ -19,7 +19,37 @@ const weatherCodeMap: Record<number, string> = {
   71: "Snow",
 };
 
-const temperature = ({ temper, darkMode }: { temper: any }) => {
+interface CurrentWeather {
+  temperature: number;
+  windspeed: number;
+  winddirection: number;
+  weathercode: number;
+}
+
+interface Hourly {
+  time: string[];
+  relative_humidity_2m: number[];
+}
+
+interface Daily {
+  time: string[];
+  precipitation_sum?: number[];
+  sunrise?: string[];
+  sunset?: string[];
+}
+
+interface Temper {
+  current_weather: CurrentWeather;
+  hourly: Hourly;
+  daily: Daily;
+}
+
+interface TemperatureProps {
+  temper: Temper;
+  darkMode: boolean;
+}
+
+const temperature = ({ temper, darkMode }: TemperatureProps) => {
   const humidityIndex = temper?.hourly?.time.findIndex((t: string) =>
     t.includes("T12")
   );

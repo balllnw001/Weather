@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { fetchWeather, fetchForecast } from "../utils/fetchweather";
 import HourlyLine from "../components/chart/HourlyLine";
 import DailySummer from "../components/chart/DailySummer";
-import { thaiCities, ThaiCity } from "../utils/thaiChities";
+import { thaiCities } from "../utils/thaiChities";
 
 interface ChartPageProps {
   darkMode: boolean;
@@ -28,9 +28,9 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
   const queryCity = searchParams.get("city");
   const queryRange = searchParams.get("range");
 
-  const [city, setCity] = useState<ThaiCity | null>(null);
+  const [city, setCity] = useState<(typeof thaiCities)[number] | null>(null);
   const [rangeDays, setRangeDays] = useState<number>(
-    queryRange ? parseInt(queryRange) : 7
+    queryRange && !isNaN(parseInt(queryRange)) ? parseInt(queryRange) : 7
   );
   const [hourlyData, setHourlyData] = useState<HourlyData[]>([]);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
@@ -41,7 +41,10 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
       const foundCity = thaiCities.find(
         (c) => c.name.toLowerCase() === queryCity.toLowerCase()
       );
-      if (foundCity) return setCity(foundCity);
+      if (foundCity) {
+        setCity(foundCity);
+        return;
+      }
     }
 
     if (!navigator.geolocation) {
@@ -74,18 +77,33 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
   useEffect(() => {
     if (!city) return;
 
+    if (!rangeDays || rangeDays <= 0 || isNaN(rangeDays)) {
+      setHourlyData([]);
+      setDailyData([]);
+      return;
+    }
+
     const getWeather = async () => {
       try {
-        const history = await fetchWeather(city.lat, city.lon);
-        const forecast = await fetchForecast(city.lat, city.lon);
+        const history = (await fetchWeather(city.lat, city.lon)) as {
+          hourly?: { time: string[]; temperature_2m: (number | null)[] };
+          daily?: {
+            time: string[];
+            temperature_2m_max: number[];
+            temperature_2m_min: number[];
+            precipitation_sum: number[];
+          };
+        };
+
+        // const forecast = (await fetchForecast(city.lat, city.lon)) as any;
 
         // Daily merge
         const allDaily: DailyData[] = (history.daily?.time || []).map(
-          (date: string, i: number) => ({
+          (date, i) => ({
             date,
-            tempMax: history.daily.temperature_2m_max[i],
-            tempMin: history.daily.temperature_2m_min[i],
-            rainTotal: history.daily.precipitation_sum[i],
+            tempMax: history.daily?.temperature_2m_max[i] ?? 0,
+            tempMin: history.daily?.temperature_2m_min[i] ?? 0,
+            rainTotal: history.daily?.precipitation_sum[i] ?? 0,
           })
         );
         setDailyData(allDaily.slice(-rangeDays));
@@ -104,7 +122,7 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
           d.setDate(d.getDate() + 1)
         ) {
           hours.forEach((h) => {
-            const matchIndex = history.hourly?.time.findIndex((t: string) => {
+            const matchIndex = history.hourly?.time.findIndex((t) => {
               const dt = new Date(t);
               return (
                 dt.getFullYear() === d.getFullYear() &&
@@ -117,11 +135,11 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
             mergedHourly.push({
               time:
                 matchIndex !== undefined && matchIndex >= 0
-                  ? new Date(history.hourly.time[matchIndex])
+                  ? new Date(history.hourly!.time[matchIndex])
                   : new Date(d.getFullYear(), d.getMonth(), d.getDate(), h),
               temperature:
                 matchIndex !== undefined && matchIndex >= 0
-                  ? history.hourly.temperature_2m[matchIndex]
+                  ? history.hourly!.temperature_2m[matchIndex]
                   : null,
             });
           });
@@ -181,27 +199,57 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
           </select>
         </div>
 
+        {/* Range Days input + buttons */}
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <label className={darkMode ? "text-white" : "text-black"}>
             Range Days:
           </label>
-          <input
-            type="number"
-            min={1}
-            max={7}
-            value={rangeDays}
-            onChange={(e) => setRangeDays(parseInt(e.target.value))}
-            className={`p-2 rounded-md w-full sm:w-20 border ${
-              darkMode
-                ? "bg-[#1e1e1e] border-gray-600 text-white"
-                : "bg-white border-gray-300 text-gray-900"
+
+          <div
+            className={`flex items-center rounded-md overflow-hidden border ${
+              darkMode ? "border-gray-600" : "border-gray-300"
             }`}
-          />
+          >
+            <button
+              onClick={() => setRangeDays((prev) => Math.max(1, prev - 1))}
+              disabled={rangeDays <= 1}
+              className={`px-3 py-2 font-bold select-none focus:outline-none focus:ring-0 focus:border-transparent disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+                darkMode
+                  ? "bg-[#2b2b2b] text-white hover:bg-[#3a3a3a]"
+                  : "bg-gray-200 text-black hover:bg-gray-300"
+              }`}
+            >
+              −
+            </button>
+
+            <input
+              type="number"
+              readOnly
+              value={rangeDays}
+              className={`w-16 h-[40px] text-center p-2 appearance-none cursor-default focus:outline-none focus:ring-0 focus:border-transparent ${
+                darkMode
+                  ? "bg-[#1e1e1e] text-white border-gray-600"
+                  : "bg-white text-gray-900 border-gray-300"
+              }`}
+            />
+
+            <button
+              onClick={() => setRangeDays((prev) => Math.min(7, prev + 1))}
+              disabled={rangeDays >= 7}
+              className={`px-3 py-2 font-bold select-none focus:outline-none focus:ring-0 focus:border-transparent disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
+                darkMode
+                  ? "bg-[#2b2b2b] text-white hover:bg-[#3a3a3a]"
+                  : "bg-gray-200 text-black hover:bg-gray-300"
+              }`}
+            >
+              +
+            </button>
+          </div>
         </div>
 
         <button
           onClick={() => {
-            if (!city) return;
+            if (!city || !navigator.clipboard) return;
             const url = `${window.location.origin}?city=${city.name}&range=${rangeDays}`;
             navigator.clipboard.writeText(url);
             alert("Link copied!");

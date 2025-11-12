@@ -221,12 +221,25 @@ const Weather: React.FC<WeatherProps> = ({
                         : "bg-gray-200 hover:bg-gray-300"
                     }`}
                   >
+                    {/* ชื่อวัน */}
                     <p
-                      className={`text-sm mb-2 ${
+                      className={`text-sm mb-1 ${
                         darkMode ? "text-gray-300" : "text-black"
                       }`}
                     >
                       {date.toLocaleDateString("en-US", { weekday: "short" })}
+                    </p>
+                    {/* วันที่เต็ม */}
+                    <p
+                      className={`text-xs mb-2 ${
+                        darkMode ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      {date.toLocaleDateString("en-US", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
                     </p>
                     <img src={icon} alt="weather" className="w-12 h-12 mb-2" />
                     <p

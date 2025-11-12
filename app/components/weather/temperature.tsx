@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+// import Image from "next/image";
 
 const windDirection = (deg: number) => {
   const directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
@@ -44,7 +44,7 @@ const temperature = ({ temper, darkMode }: { temper: any }) => {
           className="text-[#a1a1aa]"
           stroke="currentColor"
           fill="currentColor"
-          strokeWidth="0"
+          strokeWidth={0}
           viewBox="0 0 24 24"
           height="1em"
           width="1em"
@@ -63,7 +63,7 @@ const temperature = ({ temper, darkMode }: { temper: any }) => {
           className="text-[#a1a1aa]"
           stroke="currentColor"
           fill="currentColor"
-          strokeWidth="0"
+          strokeWidth={0}
           viewBox="0 0 512 512"
           height="1em"
           width="1em"
@@ -81,7 +81,7 @@ const temperature = ({ temper, darkMode }: { temper: any }) => {
           className="text-[#a1a1aa]"
           stroke="currentColor"
           fill="currentColor"
-          strokeWidth="0"
+          strokeWidth={0}
           viewBox="0 0 640 512"
           height="1em"
           width="1em"
@@ -99,7 +99,7 @@ const temperature = ({ temper, darkMode }: { temper: any }) => {
           className="text-[#a1a1aa]"
           stroke="currentColor"
           fill="currentColor"
-          strokeWidth="0"
+          strokeWidth={0}
           viewBox="0 0 24 24"
           height="1em"
           width="1em"
@@ -133,15 +133,15 @@ const temperature = ({ temper, darkMode }: { temper: any }) => {
                 r="84"
                 fill="none"
                 stroke="currentColor"
-                stroke-miterlimit="10"
-                stroke-width="15"
+                strokeMiterlimit={10}
+                strokeWidth={15}
               />
               <path
                 fill="none"
                 stroke="currentColor"
-                stroke-linecap="round"
-                stroke-miterlimit="10"
-                stroke-width="15"
+                strokeLinecap="round"
+                strokeMiterlimit={10}
+                strokeWidth={15}
                 d="M187.5 57.2V7.5m0 360v-49.7m92.2-222.5 35-35M60.3 314.7l35.1-35.1m0-184.4-35-35m254.5 254.5-35.1-35.1M57.2 187.5H7.5m360 0h-49.7"
               >
                 <animateTransform
@@ -155,7 +155,7 @@ const temperature = ({ temper, darkMode }: { temper: any }) => {
               </path>
             </symbol>
           </defs>
-          <g clip-path="url(#a)">
+          <g clipPath="url(#a)">
             <use
               xlinkHref="#b"
               width="375"
@@ -166,9 +166,9 @@ const temperature = ({ temper, darkMode }: { temper: any }) => {
           <path
             fill="none"
             stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="18"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={18}
             d="M128 332h88l40-36 40 36h88"
           />
         </svg>
@@ -201,14 +201,14 @@ const temperature = ({ temper, darkMode }: { temper: any }) => {
                 fill="none"
                 stroke="currentColor"
                 strokeMiterlimit="10"
-                strokeWidth="15"
+                strokeWidth={15}
               />
               <path
                 fill="none"
                 stroke="currentColor"
                 strokeLinecap="round"
                 strokeMiterlimit="10"
-                strokeWidth="15"
+                strokeWidth={15}
                 d="M187.5 57.2V7.5m0 360v-49.7m92.2-222.5 35-35M60.3 314.7l35.1-35.1m0-184.4-35-35m254.5 254.5-35.1-35.1M57.2 187.5H7.5m360 0h-49.7"
               >
                 <animateTransform
@@ -235,7 +235,7 @@ const temperature = ({ temper, darkMode }: { temper: any }) => {
             stroke="currentColor"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth="18"
+            strokeWidth={18}
             d="M128 332h88l40 36 40-36h88"
           />
         </svg>

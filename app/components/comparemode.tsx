@@ -12,7 +12,7 @@ import {
   Tooltip,
   Title,
 } from "chart.js";
-import { thaiCities } from "../utils/thaiChities";
+import { thaiCities } from "../components/api/thaiChities";
 
 ChartJS.register(
   CategoryScale,

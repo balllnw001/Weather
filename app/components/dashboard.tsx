@@ -13,6 +13,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   range,
   darkMode,
 }) => {
+  console.log(selectedCity);
   return (
     <div className="flex flex-col lg:flex-row gap-4 h-full w-full">
       <div className="flex w-full lg:w-[40%] h-full">
@@ -25,7 +26,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       <div className="flex w-full lg:w-[60%] h-full">
         <ChartAll
           selectedCity={selectedCity}
-          range={range}
+          range={range ?? 7}
           darkMode={darkMode}
         />
       </div>

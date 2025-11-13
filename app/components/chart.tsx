@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { fetchWeather, fetchForecast } from "../utils/fetchweather";
+import { fetchWeather, fetchForecast } from "./api/fetchweather";
 import HourlyLine from "../components/chart/HourlyLine";
 import DailySummer from "../components/chart/DailySummer";
-import { thaiCities } from "../utils/thaiChities";
+import { thaiCities } from "../components/api/thaiChities";
+import CanvasChart from "./demo/canvaschart";
 
 interface ChartPageProps {
+  selectedCity: string | null;
+  range: number;
   darkMode: boolean;
 }
 
@@ -23,11 +26,15 @@ interface DailyData {
   rainTotal: number;
 }
 
-const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
+const ChartPage: React.FC<ChartPageProps> = ({
+  selectedCity: propCity,
+  range,
+  darkMode,
+}) => {
   const searchParams = useSearchParams();
   const queryCity = searchParams.get("city");
   const queryRange = searchParams.get("range");
-
+  const [selectedCity, setSelectedCity] = useState<any>(null);
   const [city, setCity] = useState<(typeof thaiCities)[number] | null>(null);
   const [rangeDays, setRangeDays] = useState<number>(
     queryRange && !isNaN(parseInt(queryRange)) ? parseInt(queryRange) : 7
@@ -35,20 +42,44 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
   const [hourlyData, setHourlyData] = useState<HourlyData[]>([]);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
 
-  // 🌍 ดึงตำแหน่งผู้ใช้ตอนหน้าโหลด หรือจาก query param
+  // เลือกเมืองจาก prop หรือใช้ตำแหน่งผู้ใช้
   useEffect(() => {
-    if (queryCity) {
-      const foundCity = thaiCities.find(
-        (c) => c.name.toLowerCase() === queryCity.toLowerCase()
-      );
-      if (foundCity) {
-        setCity(foundCity);
+    // 1️⃣ ถ้ามี propCity ให้ใช้ propCity ก่อน
+    if (propCity) {
+      const cityObj =
+        typeof propCity === "string"
+          ? thaiCities.find(
+              (c) => c.name.toLowerCase() === propCity.toLowerCase()
+            )
+          : propCity;
+
+      if (cityObj) {
+        setSelectedCity(cityObj);
         return;
       }
     }
 
+    // 2️⃣ ถ้ามี queryCity ให้ใช้ queryCity
+    const queryCity = searchParams.get("city");
+    if (queryCity) {
+      const found = thaiCities.find(
+        (c) => c.name.toLowerCase() === queryCity.toLowerCase()
+      );
+
+      if (found) {
+        setSelectedCity(found);
+      } else {
+        // ถ้าไม่เจอในไทย สร้าง object ชั่วคราว (lat/lon = 0)
+        setSelectedCity({ name: queryCity, province: "", lat: 0, lon: 0 });
+      }
+      return;
+    }
+
+    // 3️⃣ fallback → geolocation หรือ Bangkok
     if (!navigator.geolocation) {
-      setCity(thaiCities.find((c) => c.name === "Bangkok") || thaiCities[0]);
+      setSelectedCity(
+        thaiCities.find((c) => c.name === "Bangkok") || thaiCities[0]
+      );
       return;
     }
 
@@ -65,17 +96,18 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
           );
           return dB < dA ? b : a;
         });
-        setCity(nearest);
+        setSelectedCity(nearest);
       },
-      () => {
-        setCity(thaiCities.find((c) => c.name === "Bangkok") || thaiCities[0]);
-      }
+      () =>
+        setSelectedCity(
+          thaiCities.find((c) => c.name === "Bangkok") || thaiCities[0]
+        )
     );
-  }, [queryCity]);
+  }, [propCity, searchParams]);
 
   // 🔄 Fetch hourly และ daily ทุกครั้งที่ city หรือ rangeDays เปลี่ยน
   useEffect(() => {
-    if (!city) return;
+    if (!selectedCity) return;
 
     if (!rangeDays || rangeDays <= 0 || isNaN(rangeDays)) {
       setHourlyData([]);
@@ -85,7 +117,10 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
 
     const getWeather = async () => {
       try {
-        const history = (await fetchWeather(city.lat, city.lon)) as {
+        const history = (await fetchWeather(
+          selectedCity.lat,
+          selectedCity.lon
+        )) as {
           hourly?: { time: string[]; temperature_2m: (number | null)[] };
           daily?: {
             time: string[];
@@ -152,7 +187,7 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
     };
 
     getWeather();
-  }, [city, rangeDays]);
+  }, [selectedCity, rangeDays]);
 
   return (
     <div className="flex flex-col gap-6 w-full h-full">
@@ -177,7 +212,7 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
             <circle cx="12" cy="9" r="2.5" fill="currentColor" />
           </svg>
 
-          <select
+          {/* <select
             value={city?.name || ""}
             onChange={(e) => {
               const selected = thaiCities.find(
@@ -196,7 +231,17 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
                 {c.name}, {c.province}
               </option>
             ))}
-          </select>
+          </select> */}
+          <label className={darkMode ? "text-white" : "text-black"}>
+            {selectedCity?.name || "Loading..."}
+          </label>
+          {/* <p
+            className={
+              darkMode ? "text-white font-medium" : "text-black font-medium"
+            }
+          >
+            {propCity || city?.name || "Loading..."}
+          </p> */}
         </div>
 
         {/* Range Days input + buttons */}
@@ -249,8 +294,8 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
 
         <button
           onClick={() => {
-            if (!city || !navigator.clipboard) return;
-            const url = `${window.location.origin}?city=${city.name}&range=${rangeDays}`;
+            if (!selectedCity || !navigator.clipboard) return;
+            const url = `${window.location.origin}?city=${selectedCity.name}&range=${rangeDays}`;
             navigator.clipboard.writeText(url);
             alert("Link copied!");
           }}
@@ -285,6 +330,30 @@ const ChartPage: React.FC<ChartPageProps> = ({ darkMode }) => {
           <DailySummer data={dailyData} darkMode={darkMode} />
         ) : (
           <p className="text-gray-400">Loading daily summary...</p>
+        )}
+      </div>
+
+      {/* windy */}
+      <div
+        className={`flex flex-col gap-4 h-full p-4 rounded-lg ${
+          darkMode ? "bg-[#1e1e1e]" : "bg-white"
+        }`}
+      >
+        <h3 className={darkMode ? "text-white" : "text-black"}>Windy Map</h3>
+
+        {selectedCity ? (
+          <div className="h-64 md:h-80 w-full rounded-md overflow-hidden border border-gray-300">
+            <iframe
+              width="100%"
+              height="100%"
+              src={`https://embed.windy.com/embed2.html?lat=${selectedCity.lat}&lon=${selectedCity.lon}&zoom=20&level=surface&overlay=wind&menu=&message=true&type=map&location=coordinates&detail=&detailLat=${selectedCity.lat}&detailLon=${selectedCity.lon}&metricWind=default&metricTemp=default&radarRange=-1`}
+              frameBorder="0"
+              title="Windy Map"
+              allowFullScreen
+            ></iframe>
+          </div>
+        ) : (
+          <p className="text-gray-400">Loading map...</p>
         )}
       </div>
     </div>

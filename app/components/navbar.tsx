@@ -1,38 +1,59 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { thaiCities } from "../utils/thaiChities";
-import { createPortal } from "react-dom";
-
+import { thaiCities } from "../components/api/thaiChities";
+import { useRouter } from "next/navigation";
 import SunMoonToggle from "./toggle/sunmoontoggle";
 
 interface HeaderProps {
   onTabChange: (tab: string) => void;
   onCitySelect: (city: string) => void;
   onRangeSelect: (range: number) => void;
-  darkMode: boolean;
-  setDarkMode: (v: boolean) => void;
   username?: string;
   onLogout: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
 }
 
 const Navbar: React.FC<HeaderProps> = ({
   onTabChange,
   onCitySelect,
   onRangeSelect,
-  darkMode,
-  setDarkMode,
-  username, // เพิ่ม prop username
+  username,
   onLogout,
+  darkMode, // เพิ่มตรงนี้
+  setDarkMode, // เพิ่มตรงนี้
 }) => {
-  // const [darkMode, setDarkMode] = useState(true);
-  // const toggleDarkMode = () => setDarkMode(!darkMode);
+  const router = useRouter();
+
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const searchDropdownRef = useRef<HTMLDivElement | null>(null);
+
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCity, setSelectedCity] = useState(null);
+  const [selectedCity, setSelectedCity] = useState<any>(null);
 
-  const dropdownRef = useRef(null);
-  const searchDropdownRef = useRef(null);
+  // Hydration guard ป้องกันแฟลช false
+  const [mounted, setMounted] = useState(false);
+
+  // // Dark mode state
+  // const [darkMode, setDarkMode] = useState<boolean>(() => {
+  //   if (typeof window !== "undefined") {
+  //     return localStorage.getItem("darkMode") === "true";
+  //   }
+  //   return false; // default สำหรับ SSR
+  // });
+
+  // useEffect(() => {
+  //   setMounted(true); // client render แล้ว
+  // }, []);
+
+  // Update dark mode class & localStorage
+  useEffect(() => {
+    if (!mounted) return; // รอจน client mount
+    document.body.classList.toggle("dark", darkMode);
+    localStorage.setItem("darkMode", darkMode.toString());
+  }, [darkMode, mounted]);
 
   // ปิด dropdown เมื่อคลิคนอก
   useEffect(() => {
@@ -51,51 +72,20 @@ const Navbar: React.FC<HeaderProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Dark mode toggle + remember state
-  useEffect(() => {
-    // ตอน component โหลด ให้ลองอ่านค่าจาก localStorage
-    const savedMode = localStorage.getItem("darkMode");
-    if (savedMode !== null) {
-      setDarkMode(savedMode === "true"); // แปลง string -> boolean
-    }
-  }, []);
-
-  // ทุกครั้งที่ darkMode เปลี่ยน ให้บันทึกค่าไว้ใน localStorage
-  useEffect(() => {
-    document.body.classList.toggle("dark", darkMode);
-    localStorage.setItem("darkMode", darkMode.toString());
-  }, [darkMode]);
-
-  const handleSelectTab = (tab: string) => {
-    onTabChange?.(tab);
-    setOpen(false);
-  };
-
-  // const handleCityClick = (city) => {
-  //   setSelectedCity(city);
-  //   setSearchTerm(city.name);
-  //   setOpen(false);
-  //   onCitySelect?.(city);
-  // };
-
-  const handleCityClick = (city, { fromCurrentLocation = false } = {}) => {
+  // Handle city selection
+  const handleCityClick = (city: any, { fromCurrentLocation = false } = {}) => {
     setSelectedCity(city);
-    if (!fromCurrentLocation) {
-      setSearchTerm(city.name); // ถ้าเป็นจากปุ่ม Current Location ค่อยไม่เซ็ต searchTerm
-    } else {
-      setSearchTerm(""); // ล้าง search term เพื่อไม่ให้ dropdown โผล่
-    }
+    setSearchTerm("");
+    // setSearchTerm(fromCurrentLocation ? "" : city.name);
     setOpen(false);
     onCitySelect?.(city);
   };
 
-  // Filter เมืองตาม search term
   const filteredCities = thaiCities.filter((city) =>
     city.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // ฟังก์ชันหาเมืองใกล้ที่สุดจากพิกัด
-  const getNearestCity = (lat, lon) => {
+  const getNearestCity = (lat: number, lon: number) => {
     return thaiCities.reduce((prev, curr) => {
       const prevDist = Math.hypot(prev.lat - lat, prev.lon - lon);
       const currDist = Math.hypot(curr.lat - lat, curr.lon - lon);
@@ -104,15 +94,18 @@ const Navbar: React.FC<HeaderProps> = ({
   };
 
   const handleLoginLogout = () => {
+    setOpen(false);
     if (username) {
-      // Logout
-      onLogout?.(); // ลบ session / token
-      handleSelectTab("dashboard"); // set tab เป็น Dashboard
-      router.refresh(); // รีเฟรชหน้า Dashboard
+      onLogout?.();
+      onTabChange("dashboard");
+      router.refresh();
     } else {
-      handleSelectTab("login"); // ไปหน้า login
+      onTabChange("login");
     }
   };
+
+  // ป้องกันแฟลช darkMode ก่อน client mount
+  // if (!mounted) return null;
 
   return (
     <header
@@ -147,39 +140,41 @@ const Navbar: React.FC<HeaderProps> = ({
           </button>
 
           {/* Dropdown Menu */}
-          {/* {open &&
-            createPortal( */}
-          <div
-            className={`absolute z-10 left-0 top-[60px] sm:top-[70px] w-44 sm:w-48 bg-gray-800/90 backdrop-blur-xl border border-gray-600/40 rounded-xl shadow-lg text-white transition-all duration-300 origin-top ${
-              open
-                ? "opacity-100 translate-y-0 scale-100"
-                : "opacity-0 -translate-y-4 scale-95 pointer-events-none"
-            }`}
-          >
-            <ul className="text-sm sm:text-base">
-              <li
-                className="px-4 py-2 hover:bg-white/10 cursor-pointer"
-                onClick={() => handleSelectTab("dashboard")}
-              >
-                Dashboard
-              </li>
-              <li
-                className="px-4 py-2 hover:bg-white/10 cursor-pointer"
-                onClick={() => handleSelectTab("comparemode")}
-              >
-                CompareMode
-              </li>
-              <li
-                className="px-4 py-2 hover:bg-white/10 cursor-pointer"
-                onClick={() => handleSelectTab("maps")}
-              >
-                Maps
-              </li>
-            </ul>
-          </div>
-          {/*  ,
-              document.body
-             )} */}
+          {open && (
+            <div
+              className={`absolute z-10 left-0 top-[60px] sm:top-[70px] w-44 sm:w-48 bg-gray-800/90 backdrop-blur-xl border border-gray-600/40 rounded-xl shadow-lg text-white transition-all duration-300 origin-top`}
+            >
+              <ul className="text-sm sm:text-base">
+                <li
+                  className="px-4 py-2 hover:bg-white/10 cursor-pointer"
+                  onClick={() => {
+                    onTabChange("dashboard");
+                    setOpen(false);
+                  }}
+                >
+                  Dashboard
+                </li>
+                <li
+                  className="px-4 py-2 hover:bg-white/10 cursor-pointer"
+                  onClick={() => {
+                    onTabChange("comparemode");
+                    setOpen(false);
+                  }}
+                >
+                  CompareMode
+                </li>
+                <li
+                  className="px-4 py-2 hover:bg-white/10 cursor-pointer"
+                  onClick={() => {
+                    onTabChange("maps");
+                    setOpen(false);
+                  }}
+                >
+                  Maps
+                </li>
+              </ul>
+            </div>
+          )}
 
           {/* Greeting */}
           <div className="hidden md:flex flex-col text-center sm:text-left">
@@ -194,7 +189,7 @@ const Navbar: React.FC<HeaderProps> = ({
 
         {/* Right: Search + Controls */}
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
-          {/* Search Input */}
+          {/* Search Input + Dropdown */}
           <div className="relative w-full" ref={searchDropdownRef}>
             <input
               type="text"
@@ -207,8 +202,6 @@ const Navbar: React.FC<HeaderProps> = ({
                   : "border-gray-300 bg-white text-gray-900 placeholder-gray-500 focus:ring-blue-400"
               }`}
             />
-
-            {/* Search Dropdown */}
             {searchTerm && (
               <ul
                 className={`absolute top-full left-0 mt-1 z-10 w-full max-h-48 overflow-auto rounded shadow-lg text-sm sm:text-base transition-all duration-300 ${
@@ -221,11 +214,7 @@ const Navbar: React.FC<HeaderProps> = ({
                   filteredCities.map((city) => (
                     <li
                       key={city.name}
-                      onClick={() => {
-                        setSelectedCity(city); // เลือกเมือง
-                        setSearchTerm(""); // ล้าง search term -> dropdown หาย
-                        if (onCitySelect) onCitySelect(city); // ส่งค่ากลับไป Home
-                      }}
+                      onClick={() => handleCityClick(city)}
                       className={`px-3 py-2 cursor-pointer transition ${
                         darkMode ? "hover:bg-gray-600" : "hover:bg-gray-100"
                       }`}
@@ -256,10 +245,7 @@ const Navbar: React.FC<HeaderProps> = ({
                     const nearestCity = getNearestCity(latitude, longitude);
                     handleCityClick(nearestCity, { fromCurrentLocation: true });
                   },
-                  (err) => {
-                    console.error(err);
-                    alert("ไม่สามารถเข้าถึงตำแหน่งปัจจุบันได้");
-                  }
+                  () => alert("ไม่สามารถเข้าถึงตำแหน่งปัจจุบันได้")
                 );
               } else {
                 alert("เบราว์เซอร์นี้ไม่รองรับ Geolocation");
@@ -293,36 +279,9 @@ const Navbar: React.FC<HeaderProps> = ({
           </button>
 
           {/* Dark Mode Toggle */}
-          {/* <div className="flex items-center gap-2">
-            <label className="flex items-center cursor-pointer select-none">
-              <div className="relative flex items-center justify-between w-16 h-8 sm:w-20 sm:h-9 bg-gray-300 dark:bg-gray-700 rounded-full px-2 transition-colors">
-                <span className="text-blue-400 text-base sm:text-lg">🌙</span>
-                <span className="text-yellow-400 text-base sm:text-lg">🌞</span>
-                <input
-                  type="checkbox"
-                  className="hidden"
-                  checked={darkMode}
-                  onChange={toggleDarkMode}
-                />
-                <div
-                  className={`absolute top-1 left-1 w-6 h-6 sm:w-7 sm:h-7 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
-                    darkMode
-                      ? "translate-x-8 sm:translate-x-10"
-                      : "translate-x-0"
-                  }`}
-                />
-              </div>
-            </label>
-          </div> */}
-
-          {/* Dark Mode Toggle */}
           <div className="flex items-center">
             <SunMoonToggle darkMode={darkMode} setDarkMode={setDarkMode} />
           </div>
-
-          {/* <div className="hidden md:flex">
-            <p>User</p>
-          </div> */}
 
           {/* Login / Logout */}
           <div

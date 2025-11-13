@@ -1,25 +1,17 @@
-// SunMoonToggle.tsx
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import styles from "../../css/ThemeToggle.module.css";
 
-const SunMoonToggle = ({ darkMode, setDarkMode }) => {
-  // โหลดค่า darkMode ตอน mount
-  useEffect(() => {
-    const savedMode = localStorage.getItem("darkMode");
-    if (savedMode !== null) {
-      setDarkMode(savedMode === "true");
-      document.body.classList.toggle("dark", savedMode === "true");
-    }
-  }, []);
+interface SunMoonToggleProps {
+  darkMode: boolean;
+  setDarkMode: (v: boolean) => void;
+}
 
-  // เปลี่ยน body class + localStorage เมื่อ darkMode เปลี่ยน
-  useEffect(() => {
-    document.body.classList.toggle("dark", darkMode);
-    localStorage.setItem("darkMode", darkMode.toString());
-  }, [darkMode]);
-
+const SunMoonToggle: React.FC<SunMoonToggleProps> = ({
+  darkMode,
+  setDarkMode,
+}) => {
   const handleToggle = () => setDarkMode(!darkMode);
 
   return (
@@ -28,7 +20,7 @@ const SunMoonToggle = ({ darkMode, setDarkMode }) => {
         <input
           id="toggle"
           type="checkbox"
-          checked={!darkMode} // ถ้า !darkMode = day mode
+          checked={!darkMode} // day mode = !darkMode
           onChange={handleToggle}
           className={styles.toggleSwitch}
         />

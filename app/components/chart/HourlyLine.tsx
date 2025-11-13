@@ -152,6 +152,7 @@ const HourlyLine: React.FC<Props> = ({ hourlyData, darkMode }) => {
 
   return (
     <Chart
+      key={darkMode ? "dark" : "light"}
       type="line"
       data={chartData}
       options={options}

@@ -1,23 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchWeather, fetchForecast } from "../utils/fetchweather";
-import { thaiCities } from "../utils/thaiChities";
+import { useSearchParams } from "next/navigation";
+import { fetchWeather, fetchForecast } from "./api/fetchweather";
+import { thaiCities } from "./api/thaiChities";
 import { weatherIcons } from "../utils/weatherIcons";
 import Temperature from "./weather/temperature";
 import SunProgress from "../components/sunset/SunProgress";
 
 interface WeatherProps {
-  selectedCity: string | null;
-  range: number | null;
+  selectedCity: string | null; // รับ city จาก props หรือ URL
   darkMode: boolean;
 }
 
 const Weather: React.FC<WeatherProps> = ({
   selectedCity: propCity,
-  range,
   darkMode,
 }) => {
+  const searchParams = useSearchParams();
   const [selectedCity, setSelectedCity] = useState<any>(null);
   const [weatherData, setWeatherData] = useState<any>(null);
   const [unit, setUnit] = useState<"C" | "F">("C");
@@ -26,13 +26,41 @@ const Weather: React.FC<WeatherProps> = ({
     return hour >= 6 && hour < 18;
   });
 
-  // เลือกเมืองจาก prop หรือใช้ตำแหน่งผู้ใช้
+  // เลือกเมืองจาก query หรือ prop หรือ fallback
   useEffect(() => {
-    if (propCity) return setSelectedCity(propCity);
-    if (!navigator.geolocation)
-      return setSelectedCity(
+    // 1️⃣ query city
+    if (propCity) {
+      const cityObj =
+        typeof propCity === "string"
+          ? thaiCities.find(
+              (c) => c.name.toLowerCase() === propCity.toLowerCase()
+            )
+          : propCity;
+      if (cityObj) {
+        setSelectedCity(cityObj);
+        return;
+      }
+    }
+
+    // 2️⃣ prop city
+    const queryCity = searchParams.get("city");
+    if (queryCity) {
+      const found = thaiCities.find(
+        (c) => c.name.toLowerCase() === queryCity.toLowerCase()
+      );
+      if (found) {
+        setSelectedCity(found);
+        return;
+      }
+    }
+
+    // 3️⃣ fallback → ใช้ geolocation หรือ Bangkok
+    if (!navigator.geolocation) {
+      setSelectedCity(
         thaiCities.find((c) => c.name === "Bangkok") || thaiCities[0]
       );
+      return;
+    }
 
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
@@ -54,7 +82,7 @@ const Weather: React.FC<WeatherProps> = ({
           thaiCities.find((c) => c.name === "Bangkok") || thaiCities[0]
         )
     );
-  }, [propCity]);
+  }, [propCity, searchParams]);
 
   // ดึงข้อมูลพยากรณ์
   useEffect(() => {
@@ -79,6 +107,8 @@ const Weather: React.FC<WeatherProps> = ({
 
   const weather = weatherData?.history?.current_weather;
   const forecast = weatherData?.forecast?.daily;
+
+  console.log("weather.tsx", selectedCity);
 
   return (
     <div className="flex flex-col gap-4 w-full">
